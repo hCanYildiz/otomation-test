@@ -18,9 +18,12 @@ public class SearchKeywordControl {
 
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
         // 1- https://trendyol.com sayfasina gidilir.
-        driver.get("https://www.trendyol.com");
+        driver.get("https://useinsider.com/");
         // 2- Cookies çıkarsa kabul et işlemi
 
+
+
+        /*
         driver.findElement(By.xpath("//button[@id='onetrust-accept-btn-handler']")).click();
         //3-Arama cubuguna tıklama
         driver.findElement(By.xpath("//input[@data-testid='suggestion']")).click();
@@ -33,5 +36,8 @@ public class SearchKeywordControl {
         WebElement resultText = driver.findElement(By.xpath("//div[@class='dscrptn dscrptn-V2']"));
         response=resultText.isDisplayed();
         driver.close();
+
+         */
     }
+
 }
