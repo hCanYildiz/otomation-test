@@ -5,17 +5,22 @@ import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
 import org.openqa.selenium.By;
 import java.util.Set;
+
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.List;
 
 public class UITest {
+    private static final Logger log = LoggerFactory.getLogger(UITest.class);
+
     @Test
     public void OpenOrNotOpen()  {
         //Url'in açılıp açılmadığın testi
@@ -97,57 +102,79 @@ public class UITest {
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"jobs-list\"]/div[2]/div")));
        //job list'in görüntülendiği teyitlenir ve içeriğinde Istanbul, Turkey lokasyonu olan iş denetlenir.
         Assertions.assertTrue(driver.findElement(By.xpath("//*[@id=\"jobs-list\"]")).isDisplayed() && driver.findElement(By.xpath("//*[@id=\"jobs-list\"]")).getText().contains("Istanbul, Turkey") );
-
+        driver.close();
     }
 
     @Test
-    public void JobControl() throws InterruptedException {
+    public void JobList() throws InterruptedException {
+
         WebDriverManager.chromedriver().setup();
         WebDriver driver = new ChromeDriver();
-        WebDriverWait wait =new WebDriverWait(driver, Duration.ofSeconds(15));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(15));
         driver.manage().window().maximize();
 
         driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
 
+
+
+
+        // Siteye git
         driver.get("https://useinsider.com/careers/quality-assurance/");
         //cookies bekle
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"wt-cli-accept-all-btn\"]")));
         //cookies tıkla
         driver.findElement(By.xpath("//*[@id=\"wt-cli-accept-all-btn\"]")).click();
-
-
-        //see all jobs tıkla
+        //  "See all QA jobs" butonuna tıklar
         driver.findElement(By.xpath("//*[@id=\"page-head\"]/div/div/div[1]/div/div/a")).click();
 
-        //quality assurance yazısı gelene kadar bekle
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[text()='Quality Assurance']")));
-driver.navigate().refresh();
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[text()='Quality Assurance']")));
-       // wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"jobs-list\"]/div[2]/div")));
-
-        Thread.sleep(6000);
-        System.out.println(driver.findElement(By.xpath("//*[@id=\"jobs-list\"]")).getText());
+        Thread.sleep(3000); //3 sn bekle
 
 
+        // iş listesinin görüntülenmesini bekle
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("jobs-list")));
 
-        wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"career-position-list\"]/div/div")));
-        List<WebElement> elements =driver.findElements(By.xpath("//*[@id=\"jobs-list\"]"));
-        boolean location = false;
-        boolean department = false;
-        boolean position = false;
+        // İşleri listele
+        List<WebElement> jobCards = driver.findElements(By.xpath("//*[@id='jobs-list']//div[contains(@class, 'position-list-item-wrapper')]"));
+        boolean allJobsValid = true; //koşul için başlangıç değer
+        // iş ilanlarında gezin ve pozisyon departman ve lokasyon bilgilerini al.
+        for (WebElement jobCard : jobCards) {
+            String position = jobCard.findElement(By.xpath(".//p[contains(@class, 'position-title')]"))
+                    .getText();
+            String department = jobCard.findElement(By.xpath(".//span[contains(@class, 'position-department')]"))
+                    .getText();
+            String location = jobCard.findElement(By.xpath(".//div[contains(@class, 'position-location')]"))
+                    .getText();
 
-        for (WebElement element : elements){
 
-            position= element.findElement(By.xpath("//div[contains(@class, 'position-title')]")).getText().contains("Quality Assurance");
-            department=element.findElement(By.xpath("//div[contains(@class, 'position-department')]")).getText().contains("Quality Assurance");
-            location=element.findElement(By.xpath("//div[contains(@class, 'position-location')]")).getText().contains("Istanbul, Turkey");
-            if(position && department && location){
-                Assertions.assertTrue(element.isDisplayed());
+
+            // İstenilen iş kriterleri harici koşulları denetle
+            if (!position.contains("Quality Assurance") ||
+                    !department.contains("Quality Assurance") ||
+                    !location.equals("İstanbul, Turkey")) {
+                allJobsValid = false;
+
+                System.out.println("Position: " + position);
+                System.out.println("Department: " + department);
+                System.out.println("Location: " + location);
+                System.out.println("Job validation failed:");
+                System.out.println("--------------------------");
             }
         }
 
+        if (allJobsValid) {
+            System.out.println("Tüm iş ilanları istenilen pozisyon,departman ve lokasyona göredir.");
+
+        } else {
+            System.out.println("Tüm iş ilanları istenilen pozisyon,departman ve lokasyon bilgisini sağlamamaktadır");
+        }
+
+        Assertions.assertTrue(allJobsValid);
+        driver.close();
 
     }
+
+
+
     @Test
     public void ViewRole() {
         WebDriverManager.chromedriver().setup();
@@ -169,25 +196,40 @@ driver.navigate().refresh();
 
         //quality assurance yazısı gelene kadar bekle
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//span[text()='Quality Assurance']")));
+        //iş ilanı listesi görünene kadar bekle
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.xpath("//*[@id=\"jobs-list\"]/div[1]/div")));
+        //iş ilanı listesini al
         WebElement element =driver.findElement(By.xpath("//*[@id=\"jobs-list\"]/div[1]/div/a"));
         Actions actions = new Actions(driver);
-        actions.moveToElement(element).click().perform();
-        driver.findElement(By.xpath("//*[@id=\"jobs-list\"]/div[1]/div/a")).click();
-        //driver.switchTo().window(driver.getWindowHandle());
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
+        actions.moveToElement(element).click().perform(); //fareyi iş ilanı alanının üzerine getirir
+        driver.findElement(By.xpath("//*[@id=\"jobs-list\"]/div[1]/div/a")).click(); //iş ilanına tıklar
 
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(15));
+        //Yeni sekmeye geçme işlemi
         Set<String> allWindows = driver.getWindowHandles();
         String currentWindow = driver.getWindowHandle();
         for (String windowHandle : allWindows) {
             if (!windowHandle.equals(currentWindow)) {
                 driver.switchTo().window(windowHandle);
-                break; // Yeni sekmeye geçildi
+                break;
             }
         }
+        //Site açıldığını logodan kontrol etme
         WebElement open = driver.findElement(By.xpath("/html/body/div[2]/div/div/a/img"));
 
 
        Assertions.assertTrue( open.isDisplayed());
+        driver.close();
     }
-    }
+
+
+
+
+        }
+
+
+
+
+
+
+
